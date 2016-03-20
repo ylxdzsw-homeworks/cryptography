@@ -71,3 +71,22 @@ function calcIC(x::Array{Float64,1})
     square(x) = x^2
     map(square, x) |> sum
 end
+
+"""
+kasiski破解方法
+@param: 密文
+@return: 推断的密钥长度
+"""
+function kasiski(x::ASCIIString)
+    position = zeros(Int, 26,26,26) # 每个三元串最后的出现位置
+    freq     = zeros(Int, 1024) # 相同三元串距离的频数,超过1024的距离忽略
+    ord(i)   = x[i] - 'a' + 1
+    for i in 1:length(x)-2
+        p = position[ord(i), ord(i+1), ord(i+2)]
+        position[ord(i), ord(i+1), ord(i+2)] = i
+        if p != 0 && i - p <= 1024
+            freq[i-p] += 1
+        end
+    end
+    find(x->x>sort(freq)[end-3], freq) |> gcd # 出现频率top 3的距离的最大公约数
+end
