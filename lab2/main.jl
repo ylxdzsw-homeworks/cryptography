@@ -1,6 +1,6 @@
 # 2016.3.25 ylxdzsw@gmail.com
 
-# NOTE: 所有位的索引都是从右往左数(从低位往高位数)
+# NOTE: 所有位的索引都是从左往右数(从高位往低位数), 不足2的次方时在左边(高位)补0.
 
 include("tools.jl")
 
@@ -45,8 +45,7 @@ function split_shift_concat(key::BitVector)
     R = Vector{BitVector}(17)
     rol(x) = (x << 1) | (x >> 27)
     nshift = [1 1 2 2 2 2 2 2 1 2 2 2 2 2 2 1]
-    L[1] = key[1:28]
-    R[1] = key[29:56]
+    L[1], R[1] = split(key)
     for i in 1:16
         L[i+1] = rol(nshift[i]==2 ? rol(L[i]) : L[i])
         R[i+1] = rol(nshift[i]==2 ? rol(R[i]) : R[i])
@@ -73,7 +72,7 @@ function PC2(x::Vector{BitVector})
 end
 
 """
-Initial Permutation, which is not necessary and only for hardware implementation
+Initial Permutation, which is not necessary for the sake of securety and mainly for hardware implementation
 """
 function IP(x::BitVector)
     magic_matrix = [
@@ -162,7 +161,7 @@ function s_box(x::Vector{BitVector})
     row(x) = x[[1,6]] |> compact
     col(x) = x[[2,3,4,5]] |> compact
     result = BitVector[S[k][row(v)+1,col(v)+1] for (k,v) in enumerate(x)]
-    map(x->x[1:4], result)
+    map(x->x[5:end], result)
 end
 
 """
@@ -198,16 +197,14 @@ end
 """
 encrypt 64 bit data
 """
-function encrypt(x::BitVector, K::Vector{BitVector})
+function encrypt(x::BitVector, K::Vector{BitVector}; s=s_box, p=p_box)
     x = IP(x)
     L = Vector{BitVector}(17)
     R = Vector{BitVector}(17)
-    L[1] = x[1:32]
-    R[1] = x[33:64]
+    L[1], R[1] = split(x)
     for i in 1:16
         origin = expand(R[i]) $ K[i]
-        B = BitVector[origin[(i-1)*6+1:i*6] for i in 1:8]
-        target = B |> s_box |> p_box
+        target = split(origin, 1:6:48) |> s |> p
         R[i+1] = target $ L[i]
         L[i+1] = R[i]
     end
@@ -217,19 +214,17 @@ end
 """
 decrypt 64 bit data
 """
-function decrypt(x::BitVector, K::Vector{BitVector})
+function decrypt(x::BitVector, K::Vector{BitVector}; s=s_box, p=p_box)
     x = IP(x)
-    K = reverse(K)
     L = Vector{BitVector}(17)
     R = Vector{BitVector}(17)
-    L[1] = x[1:32]
-    R[1] = x[33:64]
-    for i in 1:16
-        origin = expand(L[i]) $ K[i]
-        B = BitVector[origin[(i-1)*6+1:i*6] for i in 1:8]
-        target = B |> s_box |> p_box
-        R[i+1] = L[i]
-        L[i+1] = target $ R[i]
+    L[17] = x[33:64]
+    R[17] = x[1:32]
+    for i in 16:-1:1
+        origin = expand(L[i+1]) $ K[i]
+        target = split(origin, 1:6:48) |> s |> p
+        R[i] = L[i+1]
+        L[i] = target $ R[i+1]
     end
-    FP([R[17];L[17]])
+    FP([L[1];R[1]])
 end
