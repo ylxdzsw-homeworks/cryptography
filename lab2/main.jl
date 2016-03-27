@@ -197,7 +197,7 @@ end
 """
 encrypt 64 bit data
 """
-function encrypt(x::BitVector, K::Vector{BitVector}; s=s_box, p=p_box)
+function encrypt(x::BitVector, K::Vector{BitVector}; s=s_box, p=p_box, report=x->nothing)
     x = IP(x)
     L = Vector{BitVector}(17)
     R = Vector{BitVector}(17)
@@ -207,24 +207,166 @@ function encrypt(x::BitVector, K::Vector{BitVector}; s=s_box, p=p_box)
         target = split(origin, 1:6:48) |> s |> p
         R[i+1] = target $ L[i]
         L[i+1] = R[i]
+        report([R[i+1];L[i+1]])
     end
     FP([R[17];L[17]])
 end
 
 """
-decrypt 64 bit data
+a magic of DES is that descryption is just re-encrypt with reversed key!
 """
-function decrypt(x::BitVector, K::Vector{BitVector}; s=s_box, p=p_box)
-    x = IP(x)
-    L = Vector{BitVector}(17)
-    R = Vector{BitVector}(17)
-    L[17] = x[33:64]
-    R[17] = x[1:32]
-    for i in 16:-1:1
-        origin = expand(L[i+1]) $ K[i]
-        target = split(origin, 1:6:48) |> s |> p
-        R[i] = L[i+1]
-        L[i] = target $ R[i+1]
-    end
-    FP([L[1];R[1]])
+function decrypt(x::BitVector, K::Vector{BitVector}; keyargs...)
+    encrypt(x, reverse(K); keyargs...)
 end
+
+"""
+encrypt a BMP picture without breaking header infos
+"""
+function encrypt_bmp(x::AbstractString, K::Vector{BitVector}; group_method::Symbol=:ecb, IV::UInt64=zero(UInt64))
+    open(x, "r") do finput
+    open("$(x[1:end-4]).$(group_method).bmp", "w") do foutput
+        # read the offset
+        skip(finput, 10)
+        offset = read(finput,UInt32)
+        # copy headers
+        seekstart(finput)
+        write(foutput, readbytes(finput, offset))
+        # encrypt following contents
+        while !eof(finput)
+            if group_method == :ecb
+                buffer = read(finput, UInt64) |> BitVector
+                buffer = encrypt(buffer, K)   |> UInt64
+                write(foutput, buffer)
+            elseif group_method == :cbc
+                buffer = IV $ read(finput, UInt64) |> BitVector
+                buffer = IV = encrypt(buffer, K)   |> UInt64
+                write(foutput, buffer)
+            end
+        end
+    end
+    end
+end
+
+"""
+decrypt a BMP picture
+"""
+function decrypt_bmp(x::AbstractString, K::Vector{BitVector}; group_method::Symbol=:ecb, IV::UInt64=0)
+    open(x, "r") do finput
+    open(x[1:end-8]*x[end-4:end], "w") do foutput
+        # read the offset
+        skip(finput, 10)
+        offset = read(finput,UInt32)
+        # copy headers
+        seekstart(finput)
+        write(foutput, readbytes(finput, offset))
+        # decrypt following contents
+        while !eof(finput)
+            if group_method == :ecb
+                buffer = read(finput, UInt64) |> BitVector
+                buffer = decrypt(buffer, K)   |> UInt64
+                write(foutput, buffer)
+            elseif group_method == :cbc
+                origin = read(finput, UInt64)
+                buffer = origin |> BitVector
+                buffer = IV $ decrypt(buffer, K) |> UInt64
+                write(foutput, buffer)
+                IV = origin
+            end
+        end
+    end
+    end
+end
+
+"""
+generate 2 random 64bit with just one bit defference
+"""
+function random_diff()
+    diff = one(UInt64) << rand(0:63) |> BitVector
+    r = rand(UInt64) |> BitVector
+    (r, r $ diff)
+end
+
+"""
+differential analysis of a 6->4 box
+"""
+function dc(f::Function)
+    table = zeros(UInt8, 0x40, 0x10)
+    for dx in 0x00:0x3f
+        for x in 0x00:0x3f
+            table[dx+1, f(x)$f(x$dx)+1] += 1
+        end
+    end
+    table
+end
+
+"""
+4th s-box of DES
+"""
+function s4(x::UInt8)
+    x = BitVector(x)[3:8]
+    magic_matrix = UInt8[
+         7 13 14  3  0  6  9 10  1  2  8  5 11 12  4 15
+        13  8 11  5  6 15  0  3  4  7  2 12  1 10 14  9
+        10  6  9  0 12 11  7 13 15  1  3 14  5  2  8  4
+         3 15  0  6 10  1 13  8  9  4  5 11 12  7  2 14
+    ]
+    row = BitVector(x)[[1,6]] |> compact
+    col = BitVector(x)[[2,3,4,5]] |> compact
+    magic_matrix[row+1, col+1]
+end
+
+"""
+a simple linear s-box generator
+it's just rol, xor and rem
+"""
+linear(n) = x -> begin
+    n = UInt8(n)
+    x = (x << 1) | (x >> 5)
+    x $= (n << 2) $ ~n
+    x $= (x << 3) $ (n << 4)
+    x = (x << 2) | (x >> 6)
+    x $= (x << 1) $ (x >> 2)
+    x % 0b0001_0000
+end
+
+"""
+random s_box generator
+"""
+function random(n)
+    srand(n)
+    table = [rand(0x00:0x0f) for i in 1:64]
+    x -> table[x+1]
+end
+
+"""
+my s_box generator
+a massive hash
+"""
+function custom(n)
+    n = UInt8(n)
+    x -> begin
+        x $=  n << 1
+        x $= ~x >> 3
+        x $= ~n << 4
+        x = x $ n << 3 |> BitVector
+        l,r = split(x)
+        l[1] = r[compact(l[[2,3]])+1]
+        r[1] = l[compact(r[[3,1]])+1]
+        l[2] = r[compact(l[[4,1]])+1]
+        r[2] = l[compact(r[[2,1]])+1]
+        l[3] = r[compact(l[[2,4]])+1]
+        r[3] = l[compact(r[[3,2]])+1]
+        l[4] = r[compact(l[[1,3]])+1]
+        r[4] = l[compact(r[[4,3]])+1]
+        (l<<1) $ (r>>1) |> UInt8
+    end
+end
+
+"""
+generate a function that can be used by DES from a s_box generator
+"""
+function s_boxify(x::Function)
+    s = Function[x(i) for i in 1:8]
+    x -> BitVector[s[k](compact(v)) for (k,v) in enumerate(x)]
+end
+

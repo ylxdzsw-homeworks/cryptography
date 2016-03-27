@@ -2,11 +2,11 @@
 
 Base.convert{T<:Unsigned}(::Type{T}, x::BitVector) = begin
     assert(T.size * 8 >= length(x))
-    [j*2^(i-1) for (i,j) in enumerate(reverse(x))] |> sum |> T
+    [T(j)<<(i-1) for (i,j) in enumerate(reverse(x))] |> sum |> T
 end
 Base.convert{T<:Unsigned}(::Type{BitVector}, x::T) = begin
     len = T.size * 8 - 1
-    [x << i >> len for i in 0:len] |> BitVector
+    T[x << i >> len for i in 0:len] |> BitVector
 end
 
 macro bit_str(t) :(collect($t) .== '1') end
