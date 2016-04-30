@@ -4,7 +4,9 @@ using HttpServer
 include("../lib/index.jl")
 using Lib
 
-APPID = parse(Int, ARGS[1])
+const APPID = parse(Int, ARGS[1])
+path(x) = "build/$APPID/$x"
+"" |> path |> mkpath
 
 include("root.jl")
 
