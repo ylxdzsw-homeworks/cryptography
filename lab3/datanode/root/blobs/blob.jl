@@ -9,11 +9,12 @@ end
     :route => "*"
 
     :PUT => begin
+        id = unsub(id)
         open(path(id), "w") do f
-            f.write(req[:body])
+            write(f, req[:body])
         end
         db[id]["hash"] = hash(req[:body])
-        Dict(:id=>id, read(db[id])...)
+        200
     end
 
     :GET | pdf => begin

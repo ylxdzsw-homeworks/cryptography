@@ -1,4 +1,5 @@
 using Restful
+using Restful: json, cors
 using HDF5
 using HttpServer
 

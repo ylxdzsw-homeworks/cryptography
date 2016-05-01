@@ -7,7 +7,7 @@ genid() = @sprintf("%x", rand(UInt64))
         for i in 1:65535
             id = genid()
             if !exists(db, id)
-                db[id]["name"] = req[:body]["filename"]
+                db["$(id)/name"] = req[:body]["filename"]
                 return Dict(:id => id)
             end
         end
