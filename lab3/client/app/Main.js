@@ -51,11 +51,12 @@ class Main extends React.Component {
         })
 
         const mkfile = (cb) => $.ajax({
-            url: `http://${this.state.node}/files`, method: 'POST', data: file.name
+            url: `http://${this.state.node}/files`, method: 'POST', contentType: 'application/json',
+            data: JSON.stringify({filename: file.name})
         }).done(cb)
 
         const upload = (data, cb) => $.ajax({
-            url: `http://${this.state.node}/blob/${data.blob}`, method: 'PUT', data: file,
+            url: `http://${this.state.node}/blobs/${data.blob}`, method: 'PUT', data: file,
             processData: false, contentType: false
         }).done(cb)
 
