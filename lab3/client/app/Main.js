@@ -102,7 +102,10 @@ class Main extends React.Component {
         const nodeguide = this.state.node ? "" : <img width={600} height={400} src="nodeguide.png" />
         const fileguide = !this.state.node || this.state.files.length ?
             "" : <img width={600} height={400} src="fileguide.png" />
-        const menu = <IconMenu iconButtonElement={<IconButton><MenuIcon color="white" /></IconButton>}>
+        const menu = <IconMenu
+            iconButtonElement={<IconButton><MenuIcon color="white" /></IconButton>}
+            anchorOrigin={{horizontal: 'left', vertical: 'bottom'}}
+        >
             {this.state.nodelist.length ? <Divider /> : ""}
             <MenuItem primaryText="添加新节点" leftIcon={<AddIcon />} onTouchTap={()=>this.setState({dialog: true})} />
         </IconMenu>
