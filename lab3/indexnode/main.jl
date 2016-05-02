@@ -14,6 +14,6 @@ const db = Dict(
 
 include("root.jl")
 
-@async run(Server(root), host=ip"0.0.0.0", port=10086)
+@async run(Server(root), host=ip"0.0.0.0", port=12000)
 
 isinteractive() || wait()

@@ -2,7 +2,6 @@
     :mixin => [defaultmixin]
 
     :PUT => begin
-        print(indexurl("nodes",replace(ADDRESS, ":", "%2A")))
         put(indexurl("nodes",replace(ADDRESS, ":", "%2A"))) |> statuscode
     end
 

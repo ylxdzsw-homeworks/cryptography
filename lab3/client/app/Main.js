@@ -16,6 +16,7 @@ import MenuIcon from 'material-ui/lib/svg-icons/navigation/menu'
 import AddIcon from 'material-ui/lib/svg-icons/content/add'
 import PowerIcon from 'material-ui/lib/svg-icons/action/power-settings-new'
 import SyncIcon from 'material-ui/lib/svg-icons/notification/sync'
+import PlayIcon from 'material-ui/lib/svg-icons/av/play-arrow'
 import {stopEvent} from './utils.js'
 
 const styles = {
@@ -99,12 +100,31 @@ class Main extends React.Component {
 
     connect() {
         this.setState({dialog: false, busy: this.state.busy + 1})
-        $.get(`http://${this.state.address}/ping`)
-            .done(()=>this.setState({
-                snackbar: `成功连接到 ${this.state.address}`,
-                node: this.state.address,
-                nodelist: this.state.nodelist.concat(this.state.address)}))
+        $.get(`http://${this.state.address}/status`)
+            .done(data=>{
+                this.setState({
+                    snackbar: `成功连接到 ${this.state.address}`,
+                    node: this.state.address,
+                    nodelist: this.state.nodelist.concat(this.state.address),
+                    online: data.online
+                })
+                this.sync()
+            })
             .fail(()=>this.setState({snackbar: `连接 ${this.state.address} 失败`}))
+            .always(()=>this.setState({busy: this.state.busy - 1}))
+    }
+
+    switchTo(addr) {
+        this.setState({busy: this.state.busy + 1})
+        $.get(`http://${addr}/status`)
+            .done(data=>{
+                this.setState({
+                    snackbar: `成功切换到 ${addr}`,
+                    node: addr,
+                    online: data.online})
+                this.sync()
+            })
+            .fail(()=>this.setState({snackbar: `切换 ${addr} 失败`}))
             .always(()=>this.setState({busy: this.state.busy - 1}))
     }
 
@@ -144,6 +164,15 @@ class Main extends React.Component {
             iconButtonElement={<IconButton><MenuIcon color="white" /></IconButton>}
             anchorOrigin={{horizontal: 'left', vertical: 'bottom'}}
         >
+            {this.state.nodelist.map((x,i)=><MenuItem
+                key={i}
+                primaryText={x}
+                leftIcon={<PlayIcon style={{ fill: x==this.state.node ? null : 'transparent'}} />}
+                onTouchTap={()=>{
+                    this.setState({ address: x })
+                    this.switchTo(x)
+                }}
+            />)}
             {this.state.nodelist.length ? <Divider /> : ""}
             <MenuItem primaryText="添加新节点" leftIcon={<AddIcon />} onTouchTap={()=>this.setState({dialog: true})} />
         </IconMenu>
