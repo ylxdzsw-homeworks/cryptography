@@ -13,7 +13,7 @@ end
         open(path(id), "w") do f
             write(f, req[:body])
         end
-        db[id]["hash"] = hash(req[:body])
+        db[id]["hash"] = @sprintf("%x", hash(req[:body]))
         200
     end
 

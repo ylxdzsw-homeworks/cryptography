@@ -2,11 +2,15 @@ using Restful
 using Restful: json, cors
 using HDF5
 using HttpServer
+import Requests: get, post, put, delete, options,
+                 readall, statuscode, headers
 
 include("../lib/index.jl")
 using Lib
 
 const APPID = parse(Int, ARGS[1])
+const ADDRESS = "localhost:$APPID"
+indexurl(x...) = join(["http://localhost:10086", x...], '/')
 path(x) = "build/$APPID/$x"
 "" |> path |> mkpath
 

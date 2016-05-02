@@ -2,6 +2,7 @@ import React from 'react'
 import AppBar from 'material-ui/lib/app-bar'
 import TextField from 'material-ui/lib/text-field'
 import FlatButton from 'material-ui/lib/flat-button'
+import RaisedButton from 'material-ui/lib/raised-button'
 import List from 'material-ui/lib/lists/list'
 import ListItem from 'material-ui/lib/lists/list-item'
 import IconMenu from 'material-ui/lib/menus/icon-menu'
@@ -13,6 +14,8 @@ import Snackbar from 'material-ui/lib/snackbar'
 import CircularProgress from 'material-ui/lib/circular-progress'
 import MenuIcon from 'material-ui/lib/svg-icons/navigation/menu'
 import AddIcon from 'material-ui/lib/svg-icons/content/add'
+import PowerIcon from 'material-ui/lib/svg-icons/action/power-settings-new'
+import SyncIcon from 'material-ui/lib/svg-icons/notification/sync'
 import {stopEvent} from './utils.js'
 
 const styles = {
@@ -23,6 +26,10 @@ const styles = {
     },
     busy: {
         zIndex: 9999
+    },
+    operations: {
+        float: 'right',
+        padding: '10px'
     }
 }
 
@@ -37,12 +44,16 @@ class Main extends React.Component {
             files: [],
             nodelist: [],
             dialog: false,
-            address: ""
+            address: "", // for input component
+            online: false
         }
 
         this.upload      = this.upload.bind(this)
         this.dropHandler = this.dropHandler.bind(this)
         this.connect     = this.connect.bind(this)
+        this.login       = this.login.bind(this)
+        this.logout      = this.logout.bind(this)
+        this.sync        = this.sync.bind(this)
     }
 
     componentDidMount() {
@@ -89,12 +100,39 @@ class Main extends React.Component {
     connect() {
         this.setState({dialog: false, busy: this.state.busy + 1})
         $.get(`http://${this.state.address}/ping`)
-            .done(() => this.setState({
+            .done(()=>this.setState({
                 snackbar: `成功连接到 ${this.state.address}`,
                 node: this.state.address,
                 nodelist: this.state.nodelist.concat(this.state.address)}))
             .fail(()=>this.setState({snackbar: `连接 ${this.state.address} 失败`}))
             .always(()=>this.setState({busy: this.state.busy - 1}))
+    }
+
+    login() {
+        $.ajax({
+            url: `http://${this.state.node}/connection`, method: 'PUT'
+        }).done(()=>{
+            this.setState({snackbar: "上线成功",online: true})
+            this.sync()
+        }).fail(()=>this.setState({
+            snackbar: "上线失败，请检查索引节点"
+        }))
+    }
+
+    logout() {
+        $.ajax({
+            url: `http://${this.state.node}/connection`, method: 'DELETE'
+        }).done(()=>this.setState({
+            snackbar: "注销成功",
+            online: false
+        })).fail(()=>this.setState({
+            snackbar: "注销失败"
+        }))
+    }
+
+    sync() {
+        $.get(`http://${this.state.node}/files`)
+            .done(data=>console.log(data))
     }
 
     render() {
@@ -113,14 +151,25 @@ class Main extends React.Component {
             <FlatButton label="取消" secondary={true} onTouchTap={()=>this.setState({dialog: false})} />,
             <FlatButton label="连接" primary={true} onTouchTap={this.connect} />
         ]
+        const operations = !this.state.node ? "" : <div style={styles.operations}>
+            {!this.state.online ? "" : <RaisedButton label="同步" icon={<SyncIcon />} primary={true} onTouchTap={this.sync} />}
+            <RaisedButton
+                label={this.state.online ? "注销" : "上线"}
+                icon={<PowerIcon />}
+                secondary={true}
+                style={{ marginLeft: 10 }}
+                onTouchTap={this.state.online ? this.logout : this.login}
+            />
+        </div>
 
         return (
             <div style={styles.container}>
                 <AppBar
-                    title={`SecShare - ${this.state.node || "尚未连接到节点"}`}
+                    title={`SecShare - ${this.state.node || "尚未连接到节点"} (${this.state.online ? "在线" : "离线"})`}
                     iconElementLeft={menu}
                     iconElementRight={progresser}
                 />
+                {operations}
                 {nodeguide}
                 {fileguide}
                 <Dialog
@@ -135,7 +184,7 @@ class Main extends React.Component {
                         floatingLabelText ="节点地址"
                         hintText="eg: secshare.ylxdzsw.com:233"
                         onChange={e=>this.setState({address: e.target.value})}
-                        onEnterKeyDown={this.connect}
+                        onKeyDown={e=>e.keyCode==13 && this.connect()}
                     />
                 </Dialog>
                 <Snackbar

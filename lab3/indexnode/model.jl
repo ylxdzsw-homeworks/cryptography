@@ -1,6 +1,6 @@
 immutable File
     name::AbstractString
-    hash::UInt64
+    hash::ASCIIString
     origins::Set{ASCIIString}
 end
 
@@ -13,6 +13,6 @@ end
 
 import Base: hash, isequal
 
-Base.hash(x::File, y::UInt) = hash(hash(x.name, x.hash), y)
+Base.hash(x::File, y::UInt64) = hash(hash(x.name, parse(UInt64, x.hash, 16)), y)
 
 Base.isequal(x::File, y::File) = x.name == y.name && x.hash == y.hash

@@ -1,5 +1,6 @@
 @resource node <: nodes let
     :mixin => [defaultmixin]
+    :route => "*"
 
     "节点上线"
     :PUT => let
