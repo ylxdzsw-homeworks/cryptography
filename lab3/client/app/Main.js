@@ -1,3 +1,5 @@
+// TODO: 文件名前用不同颜色指示[云端],[本地],[共享]
+
 import React from 'react'
 import AppBar from 'material-ui/lib/app-bar'
 import TextField from 'material-ui/lib/text-field'
@@ -5,6 +7,7 @@ import FlatButton from 'material-ui/lib/flat-button'
 import RaisedButton from 'material-ui/lib/raised-button'
 import List from 'material-ui/lib/lists/list'
 import ListItem from 'material-ui/lib/lists/list-item'
+import Subheader from 'material-ui/lib/Subheader'
 import IconMenu from 'material-ui/lib/menus/icon-menu'
 import MenuItem from 'material-ui/lib/menus/menu-item'
 import IconButton from 'material-ui/lib/icon-button'
@@ -17,6 +20,10 @@ import AddIcon from 'material-ui/lib/svg-icons/content/add'
 import PowerIcon from 'material-ui/lib/svg-icons/action/power-settings-new'
 import SyncIcon from 'material-ui/lib/svg-icons/notification/sync'
 import PlayIcon from 'material-ui/lib/svg-icons/av/play-arrow'
+import MoreIcon from 'material-ui/lib/svg-icons/navigation/more-vert'
+import OpenIcon from 'material-ui/lib/svg-icons/action/open-in-new'
+import DownloadIcon from 'material-ui/lib/svg-icons/file/cloud-download'
+import UploadIcon from 'material-ui/lib/svg-icons/file/cloud-upload'
 import {stopEvent} from './utils.js'
 
 const styles = {
@@ -31,6 +38,9 @@ const styles = {
     operations: {
         float: 'right',
         padding: '10px'
+    },
+    filelist: {
+        marginTop: 20
     }
 }
 
@@ -54,6 +64,8 @@ class Main extends React.Component {
         this.connect     = this.connect.bind(this)
         this.login       = this.login.bind(this)
         this.logout      = this.logout.bind(this)
+        this.share       = this.share.bind(this)
+        this.fetch       = this.fetch.bind(this)
         this.sync        = this.sync.bind(this)
     }
 
@@ -71,18 +83,18 @@ class Main extends React.Component {
 
         const unlock = () => this.setState({
             busy: this.state.busy - 1,
-            snackbar: "文件上传成功"
+            snackbar: "文件上传完成"
         })
 
         const mkfile = (cb) => $.ajax({
             url: `http://${this.state.node}/files`, method: 'POST', contentType: 'application/json',
-            data: JSON.stringify({filename: file.name})
+            data: JSON.stringify({name: file.name})
         }).done(cb).fail(unlock)
 
         const upload = (data, cb) => $.ajax({
             url: `http://${this.state.node}/blobs/${data.id}`, method: 'PUT', data: file,
             processData: false, contentType: false
-        }).done(cb).fail(unlock)
+        }).done(cb).fail(unlock).always(this.sync)
 
         lock()
         mkfile(data => upload(data, unlock))
@@ -129,6 +141,7 @@ class Main extends React.Component {
     }
 
     login() {
+        this.setState({snackbar: "正在注册到索引节点", busy: this.state.busy + 1})
         $.ajax({
             url: `http://${this.state.node}/connection`, method: 'PUT'
         }).done(()=>{
@@ -136,10 +149,13 @@ class Main extends React.Component {
             this.sync()
         }).fail(()=>this.setState({
             snackbar: "上线失败，请检查索引节点"
+        })).always(()=>this.setState({
+            busy: this.state.busy - 1
         }))
     }
 
     logout() {
+        this.setState({snackbar: "正在注销", busy: this.state.busy + 1})
         $.ajax({
             url: `http://${this.state.node}/connection`, method: 'DELETE'
         }).done(()=>this.setState({
@@ -147,12 +163,64 @@ class Main extends React.Component {
             online: false
         })).fail(()=>this.setState({
             snackbar: "注销失败"
+        })).always(()=>this.setState({
+            busy: this.state.busy - 1
         }))
     }
 
+    share(id) {
+        this.setState({busy: this.state.busy + 1})
+        $.ajax({
+            url: `http://${this.state.node}/remotes`, method: 'POST',
+            data: JSON.stringify({id})
+        }).done(()=>this.setState({
+            snackbar: "分享成功"
+        })).fail(()=>this.setState({
+            snackbar: "分享失败"
+        })).always(()=>this.setState({
+            busy: this.state.busy - 1
+        })).always(this.sync)
+    }
+
+    fetch(name, hash) {
+        this.setState({busy: this.state.busy + 1})
+        $.ajax({
+            url: `http://${this.state.node}/files`, method: 'POST',
+            data: JSON.stringify({name, hash})
+        }).done(()=>this.setState({
+            snackbar: "下载成功"
+        })).fail(()=>this.setState({
+            snackbar: "下载失败"
+        })).always(()=>this.setState({
+            busy: this.state.busy - 1
+        })).always(this.sync)
+    }
+
     sync() {
-        $.get(`http://${this.state.node}/files`)
-            .done(data=>console.log(data))
+        this.setState({ snackbar: "正在同步", busy: this.state.busy + 1 })
+        const fail = () => this.setState({ snackbar: "同步失败", busy: this.state.busy - 1 })
+        $.get(`http://${this.state.node}/files`).done(localfiles=>{
+        $.get(`http://${this.state.node}/remotes`).done(remotefiles=>{
+            const all = {}
+            Object.keys(localfiles).forEach(k=>{
+                const v = localfiles[k]
+                v.id = k
+                all[v.name+v.hash] = v
+            })
+            JSON.parse(remotefiles).forEach(v=>{
+                if(all[v.name+v.hash]){
+                    all[v.name+v.hash].nodes = v.nodes
+                }else{
+                    all[v.name+v.hash] = v
+                }
+            })
+            this.setState({
+                files: Object.keys(all).map(k=>all[k]),
+                snackbar: "同步成功",
+                busy: this.state.busy - 1
+            })
+        }).fail(fail)
+        }).fail(fail)
     }
 
     render() {
@@ -167,13 +235,14 @@ class Main extends React.Component {
             {this.state.nodelist.map((x,i)=><MenuItem
                 key={i}
                 primaryText={x}
-                leftIcon={<PlayIcon style={{ fill: x==this.state.node ? null : 'transparent'}} />}
+                leftIcon={x==this.state.node ? <PlayIcon /> : null}
+                insetChildren={x==this.state.node ? null : true}
                 onTouchTap={()=>{
                     this.setState({ address: x })
                     this.switchTo(x)
                 }}
             />)}
-            {this.state.nodelist.length ? <Divider /> : ""}
+            {this.state.nodelist.length ? <Divider inset={true} /> : ""}
             <MenuItem primaryText="添加新节点" leftIcon={<AddIcon />} onTouchTap={()=>this.setState({dialog: true})} />
         </IconMenu>
         const actions = [
@@ -190,6 +259,23 @@ class Main extends React.Component {
                 onTouchTap={this.state.online ? this.logout : this.login}
             />
         </div>
+        const filelist = !this.state.files.length ? "" : <List style={styles.filelist}>
+            <Subheader>所有文件</Subheader>
+            {this.state.files.map((x,i)=><ListItem
+                key={i}
+                primaryText={x.name}
+                rightIconButton={
+                    <IconMenu
+                        iconButtonElement={<IconButton><MoreIcon /></IconButton>}
+                        anchorOrigin={{horizontal: 'right', vertical: 'center'}}
+                    >
+                        { x.id ? <MenuItem leftIcon={<OpenIcon />} onTouchTap={()=>window.open(`http://${this.state.node}/blobs/${x.id}`)}>打开</MenuItem> : ''}
+                        { x.id ? '' : <MenuItem leftIcon={<DownloadIcon />} onTouchTap={()=>this.fetch(x.name, x.hash)}>下载</MenuItem> }
+                        { x.nodes===undefined ? <MenuItem leftIcon={<UploadIcon />} onTouchTap={()=>this.share(x.id)}>分享</MenuItem> : '' }
+                    </IconMenu>
+                }
+            />)}
+        </List>
 
         return (
             <div style={styles.container}>
@@ -199,6 +285,7 @@ class Main extends React.Component {
                     iconElementRight={progresser}
                 />
                 {operations}
+                {filelist}
                 {nodeguide}
                 {fileguide}
                 <Dialog

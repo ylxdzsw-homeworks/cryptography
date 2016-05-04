@@ -1,6 +1,7 @@
 export unsub, add
 
 unsub{T}(x::SubString{T}) = T(x)
+unsub(x::AbstractString) = x
 
 add(i) = x -> x + i
 

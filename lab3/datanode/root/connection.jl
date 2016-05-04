@@ -2,10 +2,10 @@
     :mixin => [defaultmixin]
 
     :PUT => begin
-        put(indexurl("nodes",replace(ADDRESS, ":", "%2A"))) |> statuscode
+        put(indexurl("nodes",replace(ADDRESS, ":", "%2A"))).status
     end
 
     :DELETE => begin
-        delete(indexurl("nodes",replace(ADDRESS, ":", "%2A"))) |> statuscode
+        delete(indexurl("nodes",replace(ADDRESS, ":", "%2A"))).status
     end
 end

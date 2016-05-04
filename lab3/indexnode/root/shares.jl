@@ -5,13 +5,13 @@
     :POST | json => begin
         file = File(req[:body]["name"], req[:body]["hash"])
         file = db[:files][file] = get(db[:files], file, file)
-        push!(file.origins, req[:body]["node"])
+        file.origins[req[:body]["node"]] = req[:body]["id"]
         200
     end
 
     "获得所有分享文件的信息"
     :GET | json => begin
-        [Dict(:name=>x.name, :hash=>x.hash, :nodes=>sum(map(x->db[:nodes][x], x.origins)))
+        [Dict(:name=>x.name, :hash=>x.hash, :nodes=>sum(map(x->get(db[:nodes],x,false), keys(x.origins))))
             for x in values(db[:files])]
     end
 end

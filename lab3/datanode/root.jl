@@ -6,4 +6,5 @@ end
 include("root/files.jl")
 include("root/blobs.jl")
 include("root/status.jl")
+include("root/remotes.jl")
 include("root/connection.jl")

@@ -1,13 +1,13 @@
 immutable File
     name::AbstractString
     hash::ASCIIString
-    origins::Set{ASCIIString}
+    origins::Dict{AbstractString, AbstractString}
 end
 
-File(name, hash) = File(name, hash, Set{ASCIIString}())
-File(name, hash, origin::AbstractString) = begin
+File(name, hash) = File(name, hash, Dict{AbstractString, AbstractString}())
+File(name, hash, origin::AbstractString, id::AbstractString) = begin
     a = File(name, hash)
-    push!(a.origins, origin)
+    a.origins[origin] = id
     a
 end
 

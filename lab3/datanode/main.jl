@@ -3,8 +3,7 @@ using Restful: json, cors
 using HDF5
 using HttpServer
 import JSON
-import Requests: get, post, put, delete, options,
-                 readall, statuscode, headers
+import Requests: get, post, put, delete, options, readall
 
 include("../lib/index.jl")
 using Lib
