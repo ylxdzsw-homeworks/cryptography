@@ -1,5 +1,3 @@
-// TODO: 文件名前用不同颜色指示[云端],[本地],[共享]
-
 import React from 'react'
 import AppBar from 'material-ui/lib/app-bar'
 import TextField from 'material-ui/lib/text-field'
@@ -22,7 +20,7 @@ import SyncIcon from 'material-ui/lib/svg-icons/notification/sync'
 import PlayIcon from 'material-ui/lib/svg-icons/av/play-arrow'
 import MoreIcon from 'material-ui/lib/svg-icons/navigation/more-vert'
 import OpenIcon from 'material-ui/lib/svg-icons/action/open-in-new'
-import DownloadIcon from 'material-ui/lib/svg-icons/file/cloud-download'
+import DownloadIcon from 'material-ui/lib/svg-icons/file/file-download'
 import UploadIcon from 'material-ui/lib/svg-icons/file/cloud-upload'
 import {stopEvent} from './utils.js'
 
@@ -209,7 +207,7 @@ class Main extends React.Component {
             })
             JSON.parse(remotefiles).forEach(v=>{
                 if(all[v.name+v.hash]){
-                    all[v.name+v.hash].nodes = v.nodes
+                    all[v.name+v.hash].origins = v.origins
                 }else{
                     all[v.name+v.hash] = v
                 }
@@ -263,7 +261,7 @@ class Main extends React.Component {
             <Subheader>所有文件</Subheader>
             {this.state.files.map((x,i)=><ListItem
                 key={i}
-                primaryText={x.name}
+                primaryText={x.name+(!x.id?" (云端)":!x.origins||!~Object.keys(x.origins).indexOf(this.state.node)?" (本地)":" (已共享)")}
                 rightIconButton={
                     <IconMenu
                         iconButtonElement={<IconButton><MoreIcon /></IconButton>}
@@ -271,7 +269,7 @@ class Main extends React.Component {
                     >
                         { x.id ? <MenuItem leftIcon={<OpenIcon />} onTouchTap={()=>window.open(`http://${this.state.node}/blobs/${x.id}`)}>打开</MenuItem> : ''}
                         { x.id ? '' : <MenuItem leftIcon={<DownloadIcon />} onTouchTap={()=>this.fetch(x.name, x.hash)}>下载</MenuItem> }
-                        { x.nodes===undefined ? <MenuItem leftIcon={<UploadIcon />} onTouchTap={()=>this.share(x.id)}>分享</MenuItem> : '' }
+                        { !x.origins || !~Object.keys(x.origins).indexOf(this.state.node) ? <MenuItem leftIcon={<UploadIcon />} onTouchTap={()=>this.share(x.id)}>分享</MenuItem> : '' }
                     </IconMenu>
                 }
             />)}

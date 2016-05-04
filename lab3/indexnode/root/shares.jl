@@ -11,7 +11,6 @@
 
     "获得所有分享文件的信息"
     :GET | json => begin
-        [Dict(:name=>x.name, :hash=>x.hash, :nodes=>sum(map(x->get(db[:nodes],x,false), keys(x.origins))))
-            for x in values(db[:files])]
+        values(db[:files]) |> collect
     end
 end
