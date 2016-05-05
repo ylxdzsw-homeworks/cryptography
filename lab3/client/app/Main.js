@@ -111,15 +111,12 @@ class Main extends React.Component {
     connect() {
         this.setState({dialog: false, busy: this.state.busy + 1})
         $.get(`http://${this.state.address}/status`)
-            .done(data=>{
-                this.setState({
-                    snackbar: `成功连接到 ${this.state.address}`,
-                    node: this.state.address,
-                    nodelist: this.state.nodelist.concat(this.state.address),
-                    online: data.online
-                })
-                this.sync()
-            })
+            .done(data=>this.setState({
+                snackbar: `成功连接到 ${this.state.address}`,
+                node: this.state.address,
+                nodelist: this.state.nodelist.concat(this.state.address),
+                online: data.online
+            }))
             .fail(()=>this.setState({snackbar: `连接 ${this.state.address} 失败`}))
             .always(()=>this.setState({busy: this.state.busy - 1}))
     }
@@ -131,7 +128,8 @@ class Main extends React.Component {
                 this.setState({
                     snackbar: `成功切换到 ${addr}`,
                     node: addr,
-                    online: data.online})
+                    online: data.online,
+                    nodelist: []})
                 this.sync()
             })
             .fail(()=>this.setState({snackbar: `切换 ${addr} 失败`}))
@@ -167,6 +165,7 @@ class Main extends React.Component {
     }
 
     share(id) {
+        if(!this.state.online){return this.setState({snackbar: "节点处于离线状态"})}
         this.setState({busy: this.state.busy + 1})
         $.ajax({
             url: `http://${this.state.node}/remotes`, method: 'POST',
@@ -181,6 +180,7 @@ class Main extends React.Component {
     }
 
     fetch(name, hash) {
+        if(!this.state.online){return this.setState({snackbar: "节点处于离线状态"})}
         this.setState({busy: this.state.busy + 1})
         $.ajax({
             url: `http://${this.state.node}/files`, method: 'POST',
@@ -195,6 +195,7 @@ class Main extends React.Component {
     }
 
     sync() {
+        if(!this.state.online){return this.setState({snackbar: "节点处于离线状态"})}
         this.setState({ snackbar: "正在同步", busy: this.state.busy + 1 })
         const fail = () => this.setState({ snackbar: "同步失败", busy: this.state.busy - 1 })
         $.get(`http://${this.state.node}/files`).done(localfiles=>{
@@ -296,7 +297,7 @@ class Main extends React.Component {
                         name="address"
                         style={{ width: "80%" }}
                         floatingLabelText ="节点地址"
-                        hintText="eg: secshare.ylxdzsw.com:233"
+                        hintText="eg: secshare.ylxdzsw.com:12001"
                         onChange={e=>this.setState({address: e.target.value})}
                         onKeyDown={e=>e.keyCode==13 && this.connect()}
                     />

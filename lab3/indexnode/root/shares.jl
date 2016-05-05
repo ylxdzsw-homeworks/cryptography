@@ -1,5 +1,6 @@
 @resource shares <: root let
     :mixin => [defaultmixin]
+    :onhandle => [auth]
 
     "注册分享文件到索引节点"
     :POST | json => begin

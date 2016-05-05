@@ -1,7 +1,7 @@
 genid() = @sprintf("%x", rand(UInt64))
 
 download(name::AbstractString, hash::ASCIIString, id::ASCIIString) = begin
-    session = post(indexurl("communications"), json=Dict(
+    session = post(indexurl("communications"), headers=authheader(), json=Dict(
         "name" => name, "hash" => hash
     )) |> readall |> JSON.parse
 

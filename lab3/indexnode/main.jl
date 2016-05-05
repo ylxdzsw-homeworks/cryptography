@@ -13,6 +13,18 @@ const db = Dict(
     :nodes => Dict{AbstractString, ASCIIString}()
 )
 
+auth(r::Resource, req, id) = let
+    token     = req[:headers]["X-Auth-Token"]
+    node      = req[:headers]["X-Auth-Node"]
+    timestamp = req[:headers]["X-Auth-Timestamp"]
+
+    if token == gentoken(timestamp, db[:nodes][node])
+        nothing
+    else
+        Response(403)
+    end
+end
+
 include("root.jl")
 
 @async run(Server(root), host=ip"0.0.0.0", port=12000)

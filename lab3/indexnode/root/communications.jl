@@ -1,5 +1,6 @@
 @resource communications <: root let
     :mixin => [defaultmixin]
+    :onhandle => [auth]
 
     "获取某文件持有者的联系方式和通信暗号"
     :POST | json => begin

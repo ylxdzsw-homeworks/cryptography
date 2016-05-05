@@ -18,6 +18,15 @@ path(x) = "build/$APPID/$x"
 
 const db = h5open(path("db.h5"), isfile(path("db.h5")) ? "r+" : "w")
 
+authheader() = let
+    timestamp = @sprintf("%x", UInt64(now()))
+    Dict(
+        "X-Auth-Token"     => gentoken(timestamp, nodekey),
+        "X-Auth-Node"      => ADDRESS,
+        "X-Auth-Timestamp" => timestamp
+    )
+end
+
 include("root.jl")
 
 @async run(Server(root), host=ip"0.0.0.0", port=APPID)

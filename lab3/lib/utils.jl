@@ -1,4 +1,6 @@
-export unsub, add
+using HttpServer
+
+export unsub, add, gt, not, equals
 
 unsub{T}(x::SubString{T}) = T(x)
 unsub(x::AbstractString) = x

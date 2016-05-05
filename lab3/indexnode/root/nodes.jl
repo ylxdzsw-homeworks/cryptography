@@ -1,5 +1,6 @@
 @resource nodes <: root let
     :mixin => [defaultmixin]
+    :onhandle => [auth]
 
     "获得所有在线节点列表"
     :GET | json => begin
