@@ -269,7 +269,7 @@ class Main extends React.Component {
                     >
                         { x.id ? <MenuItem leftIcon={<OpenIcon />} onTouchTap={()=>window.open(`http://${this.state.node}/blobs/${x.id}`)}>打开</MenuItem> : ''}
                         { x.id ? '' : <MenuItem leftIcon={<DownloadIcon />} onTouchTap={()=>this.fetch(x.name, x.hash)}>下载</MenuItem> }
-                        { !x.origins || !~Object.keys(x.origins).indexOf(this.state.node) ? <MenuItem leftIcon={<UploadIcon />} onTouchTap={()=>this.share(x.id)}>分享</MenuItem> : '' }
+                        { x.id && (!x.origins || !~Object.keys(x.origins).indexOf(this.state.node)) ? <MenuItem leftIcon={<UploadIcon />} onTouchTap={()=>this.share(x.id)}>分享</MenuItem> : '' }
                     </IconMenu>
                 }
             />)}

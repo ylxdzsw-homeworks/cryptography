@@ -9,7 +9,7 @@ include("model.jl")
 
 const db = Dict(
     :files => Dict{File, File}(),
-    :nodes => Dict{AbstractString, Bool}()
+    :nodes => Dict{AbstractString, ASCIIString}()
 )
 
 include("root.jl")

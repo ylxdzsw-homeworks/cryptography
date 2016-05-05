@@ -7,14 +7,15 @@
         id = replace(id, "%2A", ":")
         id in keys(db[:nodes]) || return 404
 
-        Dict(:online=>db[:nodes][id])
+        Dict(:online=>!isempty(db[:nodes][id]))
     end
 
     "节点上线"
-    :PUT => let
+    :PUT | json => let
         id = replace(id, "%2A", ":")
-        db[:nodes][id] = true
-        200
+        nodekey = @sprintf("%x", rand(UInt64))
+        db[:nodes][id] = nodekey
+        Dict(:nodekey=>nodekey)
     end
 
     "节点下线"
@@ -22,7 +23,7 @@
         id = replace(id, "%2A", ":")
         id in keys(db[:nodes]) || return 404
 
-        db[:nodes][id] = false
+        db[:nodes][id] = ""
         200
     end
 end

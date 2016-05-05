@@ -3,7 +3,7 @@
 
     "获得所有在线节点列表"
     :GET | json => begin
-        [x for (x,y) in filter(db[:nodes]) do x,y y end]
+        [x for (x,y) in filter(db[:nodes]) do x,y !isempty(y) end]
     end
 end
 

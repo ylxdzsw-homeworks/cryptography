@@ -2,7 +2,9 @@
     :mixin => [defaultmixin]
 
     :PUT => begin
-        put(indexurl("nodes",replace(ADDRESS, ":", "%2A"))).status
+        r = put(indexurl("nodes",replace(ADDRESS, ":", "%2A"))) |> readall |> JSON.parse
+        global nodekey = r["nodekey"]
+        200
     end
 
     :DELETE => begin

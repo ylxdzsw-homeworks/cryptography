@@ -21,7 +21,12 @@ end
         if isfile(path(id))
             open(path(id), "r") do f
                 if haskey(req[:query], "token")
-                    encrypt(readbytes(f), req[:query]["token"])
+                    token = req[:query]["token"]
+                    if token == gentoken(req[:query]["timestamp"], nodekey)
+                        encrypt(readbytes(f), token)
+                    else
+                        403
+                    end
                 else
                     readbytes(f) # this API only for client
                 end

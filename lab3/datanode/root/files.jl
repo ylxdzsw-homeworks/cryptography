@@ -8,7 +8,8 @@ download(name::AbstractString, hash::ASCIIString, id::ASCIIString) = begin
     @assert session != nothing
 
     data = get("http://$(session["node"])/blobs/$(session["id"])",
-                query=Dict("token"=>session["token"])).data
+                query=Dict("timestamp"=>session["timestamp"],
+                           "token"=>session["token"])).data
 
     data = decrypt(data, session["token"])
 

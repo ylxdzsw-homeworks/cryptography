@@ -1,4 +1,4 @@
-export encrypt, decrypt
+export encrypt, decrypt, gentoken
 
 function encrypt(data::Vector{UInt8}, key::AbstractString)
     key = key |> hash |> PC1 |> split_shift_concat |> PC2
@@ -33,3 +33,6 @@ function decrypt(data::Vector{UInt8}, key::AbstractString)
     result.data[1:len]
 end
 
+function gentoken(timestamp, nodekey)
+    @sprintf("%x", hash(timestamp, hash(nodekey)))
+end
