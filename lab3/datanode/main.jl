@@ -11,6 +11,7 @@ using Lib
 const APPID = parse(Int, ARGS[1])
 const ADDRESS = "localhost:$APPID"
 global nodekey = ""
+global indexkey = "very secret key"
 indexurl(x...) = join(["http://localhost:12000", x...], '/')
 path(x) = "build/$APPID/$x"
 "" |> path |> mkpath

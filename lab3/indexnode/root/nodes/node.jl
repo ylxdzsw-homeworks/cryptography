@@ -12,6 +12,10 @@
 
     "节点上线"
     :PUT | json => let
+        token, timestamp = req[:body]["token"], req[:body]["timestamp"]
+        any(db[:users]) do x
+            token == gentoken(timestamp, x)
+        end || return 403
         id = replace(id, "%2A", ":")
         nodekey = @sprintf("%x", rand(UInt64))
         db[:nodes][id] = nodekey

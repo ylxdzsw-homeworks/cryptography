@@ -8,6 +8,7 @@ using Lib
 include("model.jl")
 
 const db = Dict(
+    :users => ["very secret key"],
     :files => Dict{File, File}(),
     :nodes => Dict{AbstractString, ASCIIString}()
 )
