@@ -20,7 +20,11 @@ end
     :GET | pdf => begin
         if isfile(path(id))
             open(path(id), "r") do f
-                readbytes(f)
+                if haskey(req[:query], "token")
+                    encrypt(readbytes(f), req[:query]["token"])
+                else
+                    readbytes(f) # this API only for client
+                end
             end
         else
             404

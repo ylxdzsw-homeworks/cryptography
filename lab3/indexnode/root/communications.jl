@@ -1,3 +1,7 @@
+gentoken() = begin
+    @sprintf("%x", hash("this is the token"))
+end
+
 @resource communications <: root let
     :mixin => [defaultmixin]
 
@@ -8,7 +12,7 @@
             file = db[:files][file]
             for (k,v) in file.origins
                 if db[:nodes][k]
-                    return Dict(:node=>k, :id=>v)
+                    return Dict(:node=>k, :id=>v, :token=>gentoken())
                 end
             end
             503

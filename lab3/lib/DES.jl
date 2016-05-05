@@ -2,8 +2,6 @@
 
 # NOTE: 所有位的索引都是从左往右数(从高位往低位数), 不足2的次方时在左边(高位)补0.
 
-export encrypt, decrypt
-
 """
 generate key from a specific string
 
@@ -197,7 +195,7 @@ end
 """
 encrypt 64 bit data
 """
-function encrypt(x::BitVector, K::Vector{BitVector})
+function des(x::BitVector, K::Vector{BitVector})
     x = IP(x)
     L = Vector{BitVector}(17)
     R = Vector{BitVector}(17)
@@ -209,12 +207,5 @@ function encrypt(x::BitVector, K::Vector{BitVector})
         L[i+1] = R[i]
     end
     FP([R[17];L[17]])
-end
-
-"""
-a magic of DES is that descryption is just re-encrypt with reversed key!
-"""
-function decrypt(x::BitVector, K::Vector{BitVector}; keyargs...)
-    encrypt(x, reverse(K); keyargs...)
 end
 
