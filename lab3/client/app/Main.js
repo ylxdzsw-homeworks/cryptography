@@ -129,7 +129,7 @@ class Main extends React.Component {
                     snackbar: `成功切换到 ${addr}`,
                     node: addr,
                     online: data.online,
-                    nodelist: []})
+                    filelist: []})
                 this.sync()
             })
             .fail(()=>this.setState({snackbar: `切换 ${addr} 失败`}))
